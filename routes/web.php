@@ -31,3 +31,5 @@ Route::post('/topup/confirm', 'TopUpController@confirm')->name('wallet.topup.con
 
 // pay
 Route::get('/pay', 'PayController@index')->name('wallet.pay');
+Route::get('/pay/bill', 'PayController@bill')->name('wallet.pay.bill');
+Route::post('/pay/submit', 'PayController@pay')->name('wallet.pay.submit');

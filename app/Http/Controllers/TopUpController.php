@@ -7,19 +7,30 @@ use App\TopUp;
 use App\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Repository\Models\PayRepository;
+use App\Repository\Models\TopUpRepository;
+use App\Repository\Models\WalletRepository;
 
 class TopUpController extends Controller
 {
     
-    public function __construct(){
+    protected $topup;
+    protected $pay;
+    protected $wallet;
+
+    public function __construct(TopUp $topup, Pay $pay, Wallet $wallet){
         $this->middleware('auth');
+
+        $this->topup = new TopUpRepository($topup);
+        $this->pay = new PayRepository($pay);
+        $this->wallet = new WalletRepository($wallet);
     }
     
     public function index(Request $request){
         // current saldo
         $user = Auth::user();
-        $wallet = Wallet::where('id_user', $user->id)->first();
-        return view('topup.index', ['wallet' => $wallet]);
+        $_wallet = $this->wallet->findByUser($user->id);
+        return view('topup.index', ['wallet' => $_wallet]);
     }
     
     // request topup balance
@@ -29,17 +40,16 @@ class TopUpController extends Controller
     */
     public function checkout(Request $request){
         $user = Auth::user();
-        $topup = $request->topup;
+        $_topup = $request->topup;
         
-        $unique_code = $this->unique_code(3);
-        $total = intval($topup) + $unique_code;
+        $unique_code = $this->unique_code(3); // unit test
+        $total = intval($_topup) + $unique_code; // unit test
         
         session(['unique_code' => $unique_code]);
         
-        
         return view('topup.checkout', [
         'user' => $user,
-        'topup' => $topup,
+        'topup' => $_topup,
         'total' => $total,
         
         ]);
@@ -51,54 +61,65 @@ class TopUpController extends Controller
         $total = $request->total;
         $unique_code = $request->session()->get('unique_code');
         
-        $wallet = Wallet::where('id_user', $user->id)->first();
+        $_wallet = $this->wallet->findByUser($user->id);
         
         // store to pay
-        $pay = new Pay();
-        $pay->total_invoice = $total;
-        $pay->payment_method = $payment_method;
-        $pay->is_confirmed = false;
-        $pay->is_transfered = false;
-        $pay->save();
+        $_pay = $this->pay->create(
+            [
+                'total_invoice' => $total,
+                'payment_method' => $payment_method,
+                'is_confirmed' => false,
+                'is_transfered' => false
+            ]
+        );
         
         // store to topup
-        
-        $topup = new TopUp();
-        $topup->id_wallet = $wallet->id;
-        $topup->topup = $request->topup;
-        $topup->is_paid = false;
-        $topup->unique_code = $unique_code;
-        $topup->id_pay = $pay->id;
-        $topup->source = $payment_method;
-        $topup->save();
+        $_topup = $this->topup->create(
+            [
+                'id_wallet' => $_wallet->id,
+                'topup' => $request->topup,
+                'is_paid' => false,
+                'unique_code' => $unique_code,
+                'id_pay' => $_pay->id,
+                'source' => $payment_method,
+            ]
+        );
         
         return view('topup.confirm', [
-        'pay' => $pay,
-        'topup' => $topup
+        'pay' => $_pay,
+        'topup' => $_topup
         ]);
     }
     
+    /**
+     * Confirm
+     * @desc
+     * - update topup paid status (is_paid = true)
+     * - update pay confirmed and transfered (is_confirmed = true, is_transfered = true)
+     * - update wallet balance (current balance + topup)
+     */
     public function confirm(Request $request){
         
-        $pay = Pay::find($request->pay);
-        $topup = TopUp::find($request->topup);
+        // update topup paid status (is_paid = true)
+        $_topup = $this->topup->updatePaidStatus($request->topup);
         
-        $pay->is_confirmed = true;
-        $pay->is_transfered = true;
-        $topup->is_paid = true;
-        
-        $pay->save();
-        $topup->save();
-        
-        $wallet = Wallet::find($topup->id_wallet);
-        
-        $wallet->balance += $topup->topup;
-        $wallet->save();
-        
-        return redirect(route('wallet.topup'));
+        // update pay confirmed and transfered (is_confirmed = true, is_transfered = true)
+        $this->pay->updateConfirmedAndTransfered($request->pay);
+
+        // update wallet balance (current balance + topup)
+        $this->wallet->updateBalance($_topup->topup); 
+
+        return redirect(route('wallet.topup'))->with([
+            'message' => [
+                'type' => 'success', // bs4 alert class,
+                'title' => 'Top Up Success!',
+                'content' => 'Your top up is success, please check your current balance'
+            ],
+            
+        ]);
     }
     
-    // add to helpers
+    // add to helpers -> as unit test
     private function unique_code($length) {
         $result = '';
         

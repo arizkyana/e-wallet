@@ -16,3 +16,22 @@
 .currency {
     font-size: 4rem;
 }
+
+.icon-2x {
+    font-size: 2rem;
+}
+
+.icon-3x {
+    font-size: 3rem;
+}
+
+.flash-message {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    width: 40rem;
+    margin: 0 auto;
+    top: 10rem;
+}

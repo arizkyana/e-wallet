@@ -1,5 +1,4 @@
-@extends('layouts.app')
-
+@extends('layouts.app') 
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
@@ -11,7 +10,7 @@
                     <div class="text-center">
                         <strong>Current Balance</strong> <br />
                         <span class="currency">
-                            {{ $wallet->balance }}
+                            {{ isset($wallet->balance) ? $wallet->balance : 0  }}
                         </span>
                     </div>
 
@@ -27,7 +26,7 @@
                                 {{-- /submit --}}
                             </form>
                         </div>
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
