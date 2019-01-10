@@ -2,6 +2,7 @@
 
 namespace App\Repository\Models;
 
+use Exception;
 use App\Repository\Repository;
 use Illuminate\Support\Facades\Auth;
 
@@ -42,16 +43,23 @@ class WalletRepository implements Repository
     }
 
     /** Traits */
-    public function updateBalance($topup){
+    public function topup($topup){
         $user = Auth::user();
         $wallet = $this->findByUser($user->id);
         
-        $wallet->balance = $this->_updateBalance($wallet->balance, $topup);
+        $wallet->balance = $this->_topup($wallet->balance, $topup);
         $wallet->save();
         return $wallet;
     }
 
-    private function _updateBalance($currentBalance, $topup){
+    public function _topup($currentBalance, $topup){
+        if($this->isNegativeTopUp($topup)) {
+            throw new Exception('Top Up Cannot Negative');
+        }
         return intval($currentBalance) + intval($topup);
+    }
+
+    public function isNegativeTopUp($topup){
+        return $topup < 0;
     }
 }

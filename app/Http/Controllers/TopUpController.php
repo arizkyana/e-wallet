@@ -101,22 +101,35 @@ class TopUpController extends Controller
     public function confirm(Request $request){
         
         // update topup paid status (is_paid = true)
-        $_topup = $this->topup->updatePaidStatus($request->topup);
+        try{
+            $_topup = $this->topup->updatePaidStatus($request->topup);
         
-        // update pay confirmed and transfered (is_confirmed = true, is_transfered = true)
-        $this->pay->updateConfirmedAndTransfered($request->pay);
+            // update pay confirmed and transfered (is_confirmed = true, is_transfered = true)
+            $this->pay->updateConfirmedAndTransfered($request->pay);
 
-        // update wallet balance (current balance + topup)
-        $this->wallet->updateBalance($_topup->topup); 
+            // update wallet balance (current balance + topup)
+            $this->wallet->topup($_topup->topup); 
 
-        return redirect(route('wallet.topup'))->with([
-            'message' => [
-                'type' => 'success', // bs4 alert class,
-                'title' => 'Top Up Success!',
-                'content' => 'Your top up is success, please check your current balance'
-            ],
+            $message = [
+                'message' => [
+                    'type' => 'success', // bs4 alert class,
+                    'title' => 'Top Up Success!',
+                    'content' => 'Your top up is success, please check your current balance'
+                ],
+                
+            ];
             
-        ]);
+        } catch (Exception $e){
+            $message = [
+                'message' => [
+                    'type' => 'danger', // bs4 alert class,
+                    'title' => 'Top Up Failed!',
+                    'content' => $e->getMessage()
+                ],
+            ];
+        }
+
+        return redirect(route('wallet.topup'))->with($message);
     }
     
     // add to helpers -> as unit test

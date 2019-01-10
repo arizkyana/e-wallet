@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Wallet;
 use Tests\TestCase;
+use App\Repository\Models\WalletRepository;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -14,66 +15,38 @@ class WalletTest extends TestCase
 
     private $_BALANCE = 500000;
 
-    public function testUpdateBalanceEqualValue()
-    {
-        $topup = 500000;
-
-        $wallet = factory(Wallet::class)->make([
+    public function setUp(){
+        parent::setUp();
+        $this->wallet = factory(Wallet::class)->make([
             'id_user' => 1,
             'balance' => $this->_BALANCE
-        ]);
-
-        $this->assertTrue($wallet->balance == $topup);
-        $this->assertFalse($wallet->balance == $topup);
-
-        $this->assertSame($wallet->balance, $topup);
-        $this->assertEqual($wallet->balance, $topup);
+        ]);        
     }
 
-    public function testUpdateBalanceLowerThanCurrent(){
+
+    public function testCannotTopUpWithNegativeValue(){
 
         $topup = 500000;
 
-        $wallet = factory(Wallet::class)->make([
-            'id_user' => 1,
-            'balance' => $this->_BALANCE
-        ]);
+        $_wallet = new WalletRepository($this->wallet);
 
-        $this->assertTrue($wallet->balance < $topup);
-        $this->assertFalse($wallet->balance < $topup);
-    }
+        $_topup = $_wallet->isNegativeTopUp($topup);
 
-    public function testUpdateBalanceHigherThanCurrent(){
-
-        $topup = 500000;
-
-        $wallet = factory(Wallet::class)->make([
-            'id_user' => 1,
-            'balance' => $this->_BALANCE
-        ]);
-
-        $this->assertTrue($wallet->balance > $topup);
-        $this->assertFalse($wallet->balance > $topup);
-
-    }
-
-    public function testUpdateBalanceZeroValue(){
-
-        $topup = 0;
-
-        $wallet = factory(Wallet::class)->make([
-            'id_user' => 1,
-            'balance' => $this->_BALANCE
-        ]);
-
-        $this->assertSame($wallet->balance, ($wallet->balance + $topup));
-
-    }
-
-    // public function testUpdateBalanceMinValue(){
+        $this->assertFalse($_topup);
         
-    //     $topup = -100000;
+    }
 
-        
-    // }
+    public function testTopUpBalance(){
+
+        $topup = 500000;
+
+        $_wallet = new WalletRepository($this->wallet);
+
+        $_topup = $_wallet->_topup($this->wallet->balance, $topup);
+
+        $this->assertSame($_topup, 1000000);
+
+    }
+
+   
 }
