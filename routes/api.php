@@ -16,3 +16,15 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::group(['prefix' => 'topup'], function(){
+
+    Route::get('/', function(){
+        return response(['message' => 'topup endpoint']);
+    });
+
+    Route::post('/wallet/{user}', 'Api\TopUpController@walletByUser');
+    Route::post('/checkout', 'Api\TopUpController@checkout');
+    Route::post('/submit', 'Api\TopUpController@submit');
+    Route::post('/confirm', 'Api\TopUpController@submit');
+});

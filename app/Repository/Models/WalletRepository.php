@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class WalletRepository implements Repository 
 {
     protected $model;
-    public function __construct($model){
+    public function __construct($model){ // Wallet
         $this->model = $model;
     }
 

@@ -1,31 +1,30 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Pay;
-use App\TopUp;
-use App\Wallet;
+use App\User;
 use Illuminate\Http\Request;
 use App\Services\TopUpService;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use App\Repository\Models\PayRepository;
-use App\Repository\Models\TopUpRepository;
-use App\Repository\Models\WalletRepository;
 
 class TopUpController extends Controller
 {
-
     private $topup;
 
     public function __construct(TopUpService $topup){
-        $this->middleware('auth');
         $this->topup = $topup;
     }
-    
-    public function index(Request $request){
-        $wallet = $this->topup->walletByUser(Auth::user());
+
+    public function walletByUser(User $user){
+        try{
+            $wallet = $this->topup->walletByUser($user);
+            return response($wallet);
+        } catch(Exception $e){
+            return response(['message' => $e->getMessage()], 500);
+        }
+
         
-        return view('topup.index', ['wallet' => $wallet]);
     }
     
     // request topup balance
@@ -34,9 +33,11 @@ class TopUpController extends Controller
     * POST
     */
     public function checkout(Request $request){
-       
-        $checkout = $this->topup->checkout($request->all());
-        return view('topup.checkout', $checkout);
+
+        $user = Auth::user();
+
+        $checkout = $this->topup->checkout($user, $request->all());
+        return response($checkout);
     }
     
     public function submit(Request $request){
@@ -49,7 +50,7 @@ class TopUpController extends Controller
 
         $submit = $this->topup->submit($param);
         
-        return view('topup.confirm', $submit);
+        return response($submit);
     }
     
     /**
@@ -63,7 +64,6 @@ class TopUpController extends Controller
         
         $message = $this->topup->confirm($request->all());
 
-        return redirect(route('wallet.topup'))->with($message);
+        return response($message);
     }
-    
 }
